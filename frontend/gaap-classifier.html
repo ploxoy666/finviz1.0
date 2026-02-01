@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAAP/IFRS Classifier - Financial Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analyzer-styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="brand-name">FinvizPro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="index.html#quote" class="nav-link">Stock Quote</a></li>
+                <li><a href="index.html#watchlist" class="nav-link">Watchlist</a></li>
+                <li><a href="index.html#compare" class="nav-link">Compare</a></li>
+                <li><a href="screener.html" class="nav-link">Screener</a></li>
+                <li><a href="news.html" class="nav-link">News</a></li>
+                <li><a href="insider.html" class="nav-link">Insider</a></li>
+                <li class="dropdown">
+                    <a href="#" class="nav-link active">Financial Analyzer ▼</a>
+                    <div class="dropdown-content">
+                        <a href="pdf-parser.html">PDF Parser</a>
+                        <a href="gaap-classifier.html" class="active">GAAP/IFRS Classifier</a>
+                        <a href="financial-extractor.html">Financial Extractor</a>
+                        <a href="model-builder.html">Model Builder</a>
+                        <a href="forecast-engine.html">Forecast Engine</a>
+                        <a href="markov-analysis.html">Markov Analysis</a>
+                        <a href="report-generator.html">Report Generator</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="analyzer-container">
+        <div class="analyzer-header">
+            <h1>🔍 GAAP/IFRS Classifier</h1>
+            <p>Automatically detect accounting standards from financial reports</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-card">
+                <div class="upload-icon">📊</div>
+                <h3>Classify Accounting Standard</h3>
+                <p>Upload a financial report or use previously uploaded file</p>
+
+                <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
+                <button class="btn-primary" onclick="document.getElementById('pdfFile').click()">
+                    Choose PDF File
+                </button>
+
+                <div id="fileInfo" class="file-info" style="display: none;">
+                    <p><strong>Selected:</strong> <span id="fileName"></span></p>
+                    <button class="btn-success" onclick="classifyFile()">Classify Standard</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="btn-secondary" onclick="usePreviousFile()">
+                        Use Previously Uploaded File
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="loading-section" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing accounting standard...</p>
+        </div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <div class="result-card">
+                <h3>📋 Classification Results</h3>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">📑</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Detected Standard</div>
+                            <div class="stat-value" id="standard">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Confidence Level</div>
+                            <div class="stat-value" id="confidence">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h4>ℹ️ About This Standard</h4>
+                    <p id="standardInfo"></p>
+                </div>
+
+                <div class="metadata-section">
+                    <h4>Evidence & Indicators</h4>
+                    <div id="evidence" class="metadata-content"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="window.location.href='financial-extractor.html'">
+                        Next: Extract Financials →
+                    </button>
+                    <button class="btn-secondary" onclick="resetClassifier()">
+                        Classify Another File
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error</h3>
+                <p id="errorMessage"></p>
+                <button class="btn-secondary" onclick="resetClassifier()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let uploadedFilename = null;
+
+        // Check for previously uploaded file
+        window.onload = function () {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (prevFile) {
+                uploadedFilename = prevFile;
+            }
+        };
+
+        document.getElementById('pdfFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileInfo').style.display = 'block';
+            }
+        });
+
+        async function usePreviousFile() {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (!prevFile) {
+                alert('No previously uploaded file found. Please upload a new file.');
+                return;
+            }
+            uploadedFilename = prevFile;
+            await classifyStandard();
+        }
+
+        async function classifyFile() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                // Upload file
+                const uploadResponse = await fetch(`${API_BASE_URL}/api/analyzer/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const uploadData = await uploadResponse.json();
+
+                if (!uploadResponse.ok) {
+                    throw new Error(uploadData.error || 'Upload failed');
+                }
+
+                uploadedFilename = uploadData.filename;
+                sessionStorage.setItem('uploadedFilename', uploadedFilename);
+
+                await classifyStandard();
+
+            } catch (error) {
+                displayError(error.message);
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        async function classifyStandard() {
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/analyzer/classify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filename: uploadedFilename })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Classification failed');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            const standardEl = document.getElementById('standard');
+            standardEl.textContent = data.standard;
+
+            // Color code based on standard
+            if (data.standard === 'GAAP') {
+                standardEl.style.color = '#3b82f6';
+            } else if (data.standard === 'IFRS') {
+                standardEl.style.color = '#10b981';
+            } else {
+                standardEl.style.color = '#f59e0b';
+            }
+
+            const confidenceEl = document.getElementById('confidence');
+            const confidencePercent = (data.confidence * 100).toFixed(1) + '%';
+            confidenceEl.textContent = confidencePercent;
+
+            // Color code confidence
+            if (data.confidence >= 0.8) {
+                confidenceEl.style.color = '#10b981';
+            } else if (data.confidence >= 0.5) {
+                confidenceEl.style.color = '#f59e0b';
+            } else {
+                confidenceEl.style.color = '#ef4444';
+            }
+
+            // Display standard info
+            const standardInfo = getStandardInfo(data.standard);
+            document.getElementById('standardInfo').textContent = standardInfo;
+
+            // Display evidence
+            const evidenceDiv = document.getElementById('evidence');
+            if (data.evidence && Object.keys(data.evidence).length > 0) {
+                let evidenceHtml = '<div class="metadata-grid">';
+                for (const [key, value] of Object.entries(data.evidence)) {
+                    evidenceHtml += `
+                        <div class="metadata-item">
+                            <strong>${formatKey(key)}:</strong> ${formatValue(value)}
+                        </div>
+                    `;
+                }
+                evidenceHtml += '</div>';
+                evidenceDiv.innerHTML = evidenceHtml;
+            } else {
+                evidenceDiv.innerHTML = '<p>No evidence details available</p>';
+            }
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function getStandardInfo(standard) {
+            const info = {
+                'GAAP': 'Generally Accepted Accounting Principles (GAAP) is the accounting standard used primarily in the United States. It is established by the Financial Accounting Standards Board (FASB).',
+                'IFRS': 'International Financial Reporting Standards (IFRS) are accounting standards issued by the International Accounting Standards Board (IASB). They are used in over 140 countries worldwide.',
+                'UNKNOWN': 'The accounting standard could not be determined with sufficient confidence. This may require manual review.'
+            };
+            return info[standard] || info['UNKNOWN'];
+        }
+
+        function formatKey(key) {
+            return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function formatValue(value) {
+            if (typeof value === 'boolean') {
+                return value ? '✓ Yes' : '✗ No';
+            }
+            if (typeof value === 'number') {
+                return value.toFixed(2);
+            }
+            if (Array.isArray(value)) {
+                return value.join(', ');
+            }
+            return value;
+        }
+
+        function displayError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorSection').style.display = 'block';
+        }
+
+        function resetClassifier() {
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

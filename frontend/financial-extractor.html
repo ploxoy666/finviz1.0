@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Extractor - Financial Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analyzer-styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="brand-name">FinvizPro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="index.html#quote" class="nav-link">Stock Quote</a></li>
+                <li><a href="index.html#watchlist" class="nav-link">Watchlist</a></li>
+                <li><a href="index.html#compare" class="nav-link">Compare</a></li>
+                <li><a href="screener.html" class="nav-link">Screener</a></li>
+                <li><a href="news.html" class="nav-link">News</a></li>
+                <li><a href="insider.html" class="nav-link">Insider</a></li>
+                <li class="dropdown">
+                    <a href="#" class="nav-link active">Financial Analyzer ▼</a>
+                    <div class="dropdown-content">
+                        <a href="pdf-parser.html">PDF Parser</a>
+                        <a href="gaap-classifier.html">GAAP/IFRS Classifier</a>
+                        <a href="financial-extractor.html" class="active">Financial Extractor</a>
+                        <a href="model-builder.html">Model Builder</a>
+                        <a href="forecast-engine.html">Forecast Engine</a>
+                        <a href="markov-analysis.html">Markov Analysis</a>
+                        <a href="report-generator.html">Report Generator</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="analyzer-container">
+        <div class="analyzer-header">
+            <h1>💰 Financial Extractor</h1>
+            <p>Extract and analyze financial statements from reports</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-card">
+                <div class="upload-icon">📈</div>
+                <h3>Extract Financial Data</h3>
+                <p>Automatically extract Income Statement, Balance Sheet, and Cash Flow</p>
+
+                <button class="btn-primary" onclick="usePreviousFile()">
+                    Use Previously Uploaded File
+                </button>
+
+                <div style="margin-top: 15px;">
+                    <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
+                    <button class="btn-secondary" onclick="document.getElementById('pdfFile').click()">
+                        Or Upload New File
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="loading-section" style="display: none;">
+            <div class="spinner"></div>
+            <p>Extracting financial statements...</p>
+        </div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <div class="result-card">
+                <h3>📊 Extracted Financial Data</h3>
+
+                <!-- Company Info -->
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">🏢</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Company</div>
+                            <div class="stat-value" id="companyName" style="font-size: 1.5rem;">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Fiscal Year</div>
+                            <div class="stat-value" id="fiscalYear">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">💵</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Currency</div>
+                            <div class="stat-value" id="currency">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Standard</div>
+                            <div class="stat-value" id="standard">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs for different statements -->
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="showTab('income')">Income Statement</button>
+                        <button class="tab-btn" onclick="showTab('balance')">Balance Sheet</button>
+                        <button class="tab-btn" onclick="showTab('cashflow')">Cash Flow</button>
+                        <button class="tab-btn" onclick="showTab('charts')">Charts</button>
+                    </div>
+
+                    <!-- Income Statement Tab -->
+                    <div id="incomeTab" class="tab-content active">
+                        <h4>Income Statement</h4>
+                        <div id="incomeTable"></div>
+                    </div>
+
+                    <!-- Balance Sheet Tab -->
+                    <div id="balanceTab" class="tab-content">
+                        <h4>Balance Sheet</h4>
+                        <div id="balanceTable"></div>
+                    </div>
+
+                    <!-- Cash Flow Tab -->
+                    <div id="cashflowTab" class="tab-content">
+                        <h4>Cash Flow Statement</h4>
+                        <div id="cashflowTable"></div>
+                    </div>
+
+                    <!-- Charts Tab -->
+                    <div id="chartsTab" class="tab-content">
+                        <h4>Financial Visualizations</h4>
+                        <div id="revenueChart" class="chart-container"></div>
+                        <div id="profitabilityChart" class="chart-container"></div>
+                        <div id="balanceChart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="window.location.href='model-builder.html'">
+                        Next: Build Model →
+                    </button>
+                    <button class="btn-secondary" onclick="resetExtractor()">
+                        Extract Another File
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error</h3>
+                <p id="errorMessage"></p>
+                <button class="btn-secondary" onclick="resetExtractor()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let uploadedFilename = null;
+        let extractedData = null;
+
+        window.onload = function () {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (prevFile) {
+                uploadedFilename = prevFile;
+            }
+        };
+
+        document.getElementById('pdfFile').addEventListener('change', async function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                await uploadAndExtract(file);
+            }
+        });
+
+        async function usePreviousFile() {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (!prevFile) {
+                alert('No previously uploaded file found. Please upload a new file.');
+                return;
+            }
+            uploadedFilename = prevFile;
+            await extractFinancials();
+        }
+
+        async function uploadAndExtract(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                const uploadResponse = await fetch(`${API_BASE_URL}/api/analyzer/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const uploadData = await uploadResponse.json();
+
+                if (!uploadResponse.ok) {
+                    throw new Error(uploadData.error || 'Upload failed');
+                }
+
+                uploadedFilename = uploadData.filename;
+                sessionStorage.setItem('uploadedFilename', uploadedFilename);
+
+                await extractFinancials();
+
+            } catch (error) {
+                displayError(error.message);
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        async function extractFinancials() {
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/analyzer/extract`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filename: uploadedFilename })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Extraction failed');
+                }
+
+                extractedData = data;
+                displayResults(data);
+
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            // Display company info
+            document.getElementById('companyName').textContent = data.company_name || 'N/A';
+            document.getElementById('fiscalYear').textContent = data.fiscal_year || 'N/A';
+            document.getElementById('currency').textContent = data.currency || 'N/A';
+            document.getElementById('standard').textContent = data.accounting_standard || 'N/A';
+
+            // Display Income Statement
+            displayIncomeStatement(data.income_statements);
+
+            // Display Balance Sheet
+            displayBalanceSheet(data.balance_sheets);
+
+            // Display Cash Flow
+            displayCashFlow(data.cash_flow_statements);
+
+            // Create charts
+            createCharts(data);
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function displayIncomeStatement(statements) {
+            if (!statements || statements.length === 0) {
+                document.getElementById('incomeTable').innerHTML = '<p>No income statement data available</p>';
+                return;
+            }
+
+            let html = '<table class="data-table"><thead><tr>';
+            html += '<th>Metric</th>';
+            statements.forEach((stmt, idx) => {
+                html += `<th>Period ${idx + 1}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            const metrics = [
+                { key: 'revenue', label: 'Revenue' },
+                { key: 'gross_profit', label: 'Gross Profit' },
+                { key: 'operating_income', label: 'Operating Income' },
+                { key: 'net_income', label: 'Net Income' },
+                { key: 'ebitda', label: 'EBITDA' },
+                { key: 'diluted_eps', label: 'Diluted EPS' }
+            ];
+
+            metrics.forEach(metric => {
+                html += '<tr>';
+                html += `<td><strong>${metric.label}</strong></td>`;
+                statements.forEach(stmt => {
+                    const value = stmt[metric.key];
+                    html += `<td>${formatCurrency(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('incomeTable').innerHTML = html;
+        }
+
+        function displayBalanceSheet(statements) {
+            if (!statements || statements.length === 0) {
+                document.getElementById('balanceTable').innerHTML = '<p>No balance sheet data available</p>';
+                return;
+            }
+
+            let html = '<table class="data-table"><thead><tr>';
+            html += '<th>Metric</th>';
+            statements.forEach((stmt, idx) => {
+                html += `<th>Period ${idx + 1}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            const metrics = [
+                { key: 'total_assets', label: 'Total Assets' },
+                { key: 'cash_and_equivalents', label: 'Cash & Equivalents' },
+                { key: 'total_liabilities', label: 'Total Liabilities' },
+                { key: 'total_shareholders_equity', label: 'Shareholders Equity' }
+            ];
+
+            metrics.forEach(metric => {
+                html += '<tr>';
+                html += `<td><strong>${metric.label}</strong></td>`;
+                statements.forEach(stmt => {
+                    const value = stmt[metric.key];
+                    html += `<td>${formatCurrency(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('balanceTable').innerHTML = html;
+        }
+
+        function displayCashFlow(statements) {
+            if (!statements || statements.length === 0) {
+                document.getElementById('cashflowTable').innerHTML = '<p>No cash flow data available</p>';
+                return;
+            }
+
+            let html = '<table class="data-table"><thead><tr>';
+            html += '<th>Metric</th>';
+            statements.forEach((stmt, idx) => {
+                html += `<th>Period ${idx + 1}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            const metrics = [
+                { key: 'cash_from_operations', label: 'Operating Cash Flow' },
+                { key: 'cash_from_investing', label: 'Investing Cash Flow' },
+                { key: 'cash_from_financing', label: 'Financing Cash Flow' },
+                { key: 'net_change_in_cash', label: 'Net Change in Cash' }
+            ];
+
+            metrics.forEach(metric => {
+                html += '<tr>';
+                html += `<td><strong>${metric.label}</strong></td>`;
+                statements.forEach(stmt => {
+                    const value = stmt[metric.key];
+                    html += `<td>${formatCurrency(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('cashflowTable').innerHTML = html;
+        }
+
+        function createCharts(data) {
+            if (!data.income_statements || data.income_statements.length === 0) return;
+
+            // Revenue Chart
+            const periods = data.income_statements.map((_, idx) => `Period ${idx + 1}`);
+            const revenues = data.income_statements.map(s => s.revenue || 0);
+
+            Plotly.newPlot('revenueChart', [{
+                x: periods,
+                y: revenues,
+                type: 'bar',
+                marker: { color: '#667eea' }
+            }], {
+                title: 'Revenue Trend',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            });
+
+            // Profitability Chart
+            const grossProfit = data.income_statements.map(s => s.gross_profit || 0);
+            const netIncome = data.income_statements.map(s => s.net_income || 0);
+
+            Plotly.newPlot('profitabilityChart', [
+                { x: periods, y: grossProfit, name: 'Gross Profit', type: 'scatter', mode: 'lines+markers' },
+                { x: periods, y: netIncome, name: 'Net Income', type: 'scatter', mode: 'lines+markers' }
+            ], {
+                title: 'Profitability Metrics',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            });
+
+            // Balance Sheet Chart
+            if (data.balance_sheets && data.balance_sheets.length > 0) {
+                const assets = data.balance_sheets.map(s => s.total_assets || 0);
+                const liabilities = data.balance_sheets.map(s => s.total_liabilities || 0);
+                const equity = data.balance_sheets.map(s => s.total_shareholders_equity || 0);
+
+                Plotly.newPlot('balanceChart', [
+                    { x: periods, y: assets, name: 'Assets', type: 'bar' },
+                    { x: periods, y: liabilities, name: 'Liabilities', type: 'bar' },
+                    { x: periods, y: equity, name: 'Equity', type: 'bar' }
+                ], {
+                    title: 'Balance Sheet Overview',
+                    barmode: 'group',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)'
+                });
+            }
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function formatCurrency(value) {
+            if (value === null || value === undefined || value === 0) return '$0';
+            return '$' + value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+
+        function displayError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorSection').style.display = 'block';
+        }
+
+        function resetExtractor() {
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+    </script>
+
+    <style>
+        .tabs-container {
+            margin-top: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h4 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+    </style>
+</body>
+
+</html>

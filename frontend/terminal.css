@@ -1,0 +1,317 @@
+/* OpenBB Dashboard Styles - Refined */
+
+:root {
+    --bg-dark: #0b0e11;
+    --bg-panel: #15191e;
+    --bg-input: #1f242d;
+    --border-subtle: #30363d;
+    --primary-blue: #3b82f6;
+    --text-white: #e6edf3;
+    --text-gray: #8b949e;
+    --text-success: #00ff9d;
+    --text-danger: #ff4d4d;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --card-radius: 4px;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-white);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Header */
+.dashboard-header {
+    height: 48px;
+    background-color: var(--bg-panel);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.brand {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ticker-search {
+    position: relative;
+    width: 200px;
+}
+
+.search-input {
+    width: 100%;
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 4px 8px 4px 28px;
+    color: var(--text-white);
+    font-size: 0.85rem;
+}
+
+.search-icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    color: var(--text-gray);
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+    flex: 1;
+    padding: 8px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: min-content;
+    /* Allow rows to size to content */
+    gap: 8px;
+}
+
+/* Widgets */
+.widget {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--card-radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.widget-header {
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.widget-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.widget-content {
+    flex: 1;
+    overflow: hidden;
+    /* Prevent spillover */
+    position: relative;
+}
+
+.scrollable {
+    overflow-y: auto;
+}
+
+/* Specific Grid Layout */
+
+/* Row 1: Ticker Info (Left), Price Chart (Right) */
+#widget-ticker-info {
+    grid-column: span 4;
+    height: 180px;
+}
+
+#widget-chart {
+    grid-column: span 8;
+    grid-row: span 2;
+    height: 480px;
+}
+
+/* Row 2: Profile (Left) */
+#widget-profile {
+    grid-column: span 4;
+    height: 290px;
+}
+
+/* Row 3: Metrics, Stats, Valuation */
+#widget-metrics {
+    grid-column: span 3;
+    height: 320px;
+}
+
+#widget-stats {
+    grid-column: span 3;
+    height: 320px;
+}
+
+#widget-valuation {
+    grid-column: span 6;
+    height: 320px;
+}
+
+/* Row 4: Revenue Geo, Revenue Business */
+#widget-geo {
+    grid-column: span 6;
+    height: 350px;
+}
+
+#widget-bus {
+    grid-column: span 6;
+    height: 350px;
+}
+
+/* Row 5: Financials, Management */
+#widget-financials {
+    grid-column: span 8;
+    height: 400px;
+}
+
+#widget-management {
+    grid-column: span 4;
+    height: 400px;
+}
+
+/* Components */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-size: 0.85rem;
+}
+
+.info-label {
+    color: var(--text-gray);
+}
+
+.info-value {
+    color: var(--text-white);
+    font-weight: 500;
+}
+
+.val-up {
+    color: var(--text-success);
+}
+
+.val-down {
+    color: var(--text-danger);
+}
+
+/* Ticker Info Specifics */
+.ticker-main-price {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-white);
+}
+
+.ticker-change {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.mini-chart-container {
+    height: 80px;
+    width: 100%;
+}
+
+/* Data Table Clean */
+.clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    /* Prevent wrapping */
+}
+
+.clean-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--text-gray);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-panel);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.clean-table td {
+    padding: 10px 12px;
+    /* A bit more padding */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    color: var(--text-white);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+/* Slightly larger for easier clicking */
+::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #8b949e;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--bg-dark);
+}
+
+/* Loading */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-panel);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--text-gray);
+    border-top-color: var(--primary-blue);
+    border-radius: 50%;
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Profile Description */
+.profile-desc {
+    padding: 12px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-gray);
+    height: 100%;
+    overflow-y: auto;
+}

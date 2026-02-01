@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Generator - Financial Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analyzer-styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="brand-name">FinvizPro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="index.html#quote" class="nav-link">Stock Quote</a></li>
+                <li><a href="index.html#watchlist" class="nav-link">Watchlist</a></li>
+                <li><a href="index.html#compare" class="nav-link">Compare</a></li>
+                <li><a href="screener.html" class="nav-link">Screener</a></li>
+                <li><a href="news.html" class="nav-link">News</a></li>
+                <li><a href="insider.html" class="nav-link">Insider</a></li>
+                <li class="dropdown">
+                    <a href="#" class="nav-link active">Financial Analyzer ▼</a>
+                    <div class="dropdown-content">
+                        <a href="pdf-parser.html">PDF Parser</a>
+                        <a href="gaap-classifier.html">GAAP/IFRS Classifier</a>
+                        <a href="financial-extractor.html">Financial Extractor</a>
+                        <a href="model-builder.html">Model Builder</a>
+                        <a href="forecast-engine.html">Forecast Engine</a>
+                        <a href="markov-analysis.html">Markov Analysis</a>
+                        <a href="report-generator.html" class="active">Report Generator</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="analyzer-container">
+        <div class="analyzer-header">
+            <h1>📑 Report Generator</h1>
+            <p>Generate comprehensive PDF financial analysis reports</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-card">
+                <div class="upload-icon">📄</div>
+                <h3>Generate Professional Report</h3>
+                <p>Create a comprehensive PDF report with analysis, forecasts, and visualizations</p>
+
+                <div class="form-grid" style="margin: 30px 0;">
+                    <div class="form-group">
+                        <label>Forecast Years</label>
+                        <input type="number" id="years" value="5" min="1" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Report Type</label>
+                        <select id="reportType">
+                            <option value="full">Full Analysis</option>
+                            <option value="summary">Executive Summary</option>
+                            <option value="forecast">Forecast Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="generateReport()">
+                    Generate PDF Report
+                </button>
+
+                <div class="info-box" style="margin-top: 30px; text-align: left;">
+                    <h4>📋 Report Includes:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>Executive Summary</li>
+                        <li>Historical Financial Statements</li>
+                        <li>Linked 3-Statement Model</li>
+                        <li>Multi-Year Forecast Projections</li>
+                        <li>Financial Ratios & KPIs</li>
+                        <li>Charts & Visualizations</li>
+                        <li>Commentary & Insights</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="loading-section" style="display: none;">
+            <div class="spinner"></div>
+            <p>Generating comprehensive PDF report...</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px;">
+                This may take a minute...
+            </p>
+        </div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <div class="result-card">
+                <h3>✅ Report Generated Successfully</h3>
+
+                <div class="success-box">
+                    <h4>🎉 Your Report is Ready!</h4>
+                    <p>The comprehensive financial analysis report has been generated and is ready for download.</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Report File</div>
+                            <div class="stat-value" id="reportName" style="font-size: 1.2rem;">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Report Type</div>
+                            <div class="stat-value" id="reportTypeDisplay">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metadata-section">
+                    <h4>Report Contents</h4>
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <strong>📈 Historical Analysis:</strong> Complete financial statements with trends
+                        </div>
+                        <div class="metadata-item">
+                            <strong>🔗 Linked Model:</strong> Integrated 3-statement model with validations
+                        </div>
+                        <div class="metadata-item">
+                            <strong>🔮 Forecast:</strong> Multi-year projections with assumptions
+                        </div>
+                        <div class="metadata-item">
+                            <strong>📊 Visualizations:</strong> Charts and graphs for key metrics
+                        </div>
+                        <div class="metadata-item">
+                            <strong>💡 Insights:</strong> Financial ratios and performance indicators
+                        </div>
+                        <div class="metadata-item">
+                            <strong>📝 Commentary:</strong> Professional analysis and recommendations
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="downloadReport()">
+                        📥 Download PDF Report
+                    </button>
+                    <button class="btn-secondary" onclick="resetGenerator()">
+                        Generate Another Report
+                    </button>
+                    <button class="btn-secondary" onclick="window.location.href='pdf-parser.html'">
+                        Start New Analysis
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error</h3>
+                <p id="errorMessage"></p>
+                <button class="btn-secondary" onclick="resetGenerator()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let uploadedFilename = null;
+        let reportFilename = null;
+        let downloadUrl = null;
+
+        window.onload = function () {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (prevFile) {
+                uploadedFilename = prevFile;
+            }
+        };
+
+        async function generateReport() {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (!prevFile) {
+                alert('No previously uploaded file found. Please start from PDF Parser.');
+                window.location.href = 'pdf-parser.html';
+                return;
+            }
+
+            uploadedFilename = prevFile;
+            const years = parseInt(document.getElementById('years').value);
+            const reportType = document.getElementById('reportType').value;
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/analyzer/report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: uploadedFilename,
+                        years: years,
+                        report_type: reportType
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Report generation failed');
+                }
+
+                reportFilename = data.report_filename;
+                downloadUrl = data.download_url;
+                displayResults(data, reportType);
+
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data, reportType) {
+            document.getElementById('reportName').textContent = data.report_filename;
+
+            const reportTypeLabels = {
+                'full': 'Full Analysis',
+                'summary': 'Executive Summary',
+                'forecast': 'Forecast Report'
+            };
+            document.getElementById('reportTypeDisplay').textContent = reportTypeLabels[reportType] || 'Full Analysis';
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function downloadReport() {
+            if (downloadUrl) {
+                window.open(API_BASE_URL + downloadUrl, '_blank');
+            } else {
+                alert('Download URL not available');
+            }
+        }
+
+        function displayError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorSection').style.display = 'block';
+        }
+
+        function resetGenerator() {
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            reportFilename = null;
+            downloadUrl = null;
+        }
+    </script>
+</body>
+
+</html>

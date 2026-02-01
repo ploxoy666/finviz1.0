@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Parser - Financial Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analyzer-styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="brand-name">FinvizPro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="index.html#quote" class="nav-link">Stock Quote</a></li>
+                <li><a href="index.html#watchlist" class="nav-link">Watchlist</a></li>
+                <li><a href="index.html#compare" class="nav-link">Compare</a></li>
+                <li><a href="screener.html" class="nav-link">Screener</a></li>
+                <li><a href="news.html" class="nav-link">News</a></li>
+                <li><a href="insider.html" class="nav-link">Insider</a></li>
+                <li class="dropdown">
+                    <a href="#" class="nav-link active">Financial Analyzer ▼</a>
+                    <div class="dropdown-content">
+                        <a href="pdf-parser.html" class="active">PDF Parser</a>
+                        <a href="gaap-classifier.html">GAAP/IFRS Classifier</a>
+                        <a href="financial-extractor.html">Financial Extractor</a>
+                        <a href="model-builder.html">Model Builder</a>
+                        <a href="forecast-engine.html">Forecast Engine</a>
+                        <a href="markov-analysis.html">Markov Analysis</a>
+                        <a href="report-generator.html">Report Generator</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="analyzer-container">
+        <div class="analyzer-header">
+            <h1>📄 PDF Parser</h1>
+            <p>Upload and parse financial reports (10-K, Annual Reports, IFRS statements)</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-card">
+                <div class="upload-icon">📁</div>
+                <h3>Upload Financial Report</h3>
+                <p>Select a PDF file to analyze</p>
+
+                <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
+                <button class="btn-primary" onclick="document.getElementById('pdfFile').click()">
+                    Choose PDF File
+                </button>
+
+                <div id="fileInfo" class="file-info" style="display: none;">
+                    <p><strong>Selected:</strong> <span id="fileName"></span></p>
+                    <p><strong>Size:</strong> <span id="fileSize"></span></p>
+                    <button class="btn-success" onclick="uploadFile()">Upload & Parse</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="loading-section" style="display: none;">
+            <div class="spinner"></div>
+            <p>Parsing PDF...</p>
+        </div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <div class="result-card">
+                <h3>📊 Parsing Results</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Pages</div>
+                            <div class="stat-value" id="totalPages">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Tables Found</div>
+                            <div class="stat-value" id="tablesFound">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Text Length</div>
+                            <div class="stat-value" id="textLength">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Status</div>
+                            <div class="stat-value success" id="status">Success</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metadata-section">
+                    <h4>Document Metadata</h4>
+                    <div id="metadata" class="metadata-content"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="window.location.href='gaap-classifier.html'">
+                        Next: Classify Standard →
+                    </button>
+                    <button class="btn-secondary" onclick="resetParser()">
+                        Parse Another File
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error</h3>
+                <p id="errorMessage"></p>
+                <button class="btn-secondary" onclick="resetParser()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let uploadedFilename = null;
+
+        document.getElementById('pdfFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileSize').textContent = formatFileSize(file.size);
+                document.getElementById('fileInfo').style.display = 'block';
+            }
+        });
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                // Upload file
+                const uploadResponse = await fetch(`${API_BASE_URL}/api/analyzer/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const uploadData = await uploadResponse.json();
+
+                if (!uploadResponse.ok) {
+                    throw new Error(uploadData.error || 'Upload failed');
+                }
+
+                uploadedFilename = uploadData.filename;
+
+                // Parse PDF
+                const parseResponse = await fetch(`${API_BASE_URL}/api/analyzer/parse`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filename: uploadedFilename })
+                });
+
+                const parseData = await parseResponse.json();
+
+                if (!parseResponse.ok) {
+                    throw new Error(parseData.error || 'Parsing failed');
+                }
+
+                displayResults(parseData);
+
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('totalPages').textContent = data.total_pages;
+            document.getElementById('tablesFound').textContent = data.tables_found;
+            document.getElementById('textLength').textContent = formatNumber(data.text_length);
+
+            // Display metadata
+            const metadataDiv = document.getElementById('metadata');
+            if (data.metadata && Object.keys(data.metadata).length > 0) {
+                let metadataHtml = '<div class="metadata-grid">';
+                for (const [key, value] of Object.entries(data.metadata)) {
+                    metadataHtml += `
+                        <div class="metadata-item">
+                            <strong>${key}:</strong> ${value}
+                        </div>
+                    `;
+                }
+                metadataHtml += '</div>';
+                metadataDiv.innerHTML = metadataHtml;
+            } else {
+                metadataDiv.innerHTML = '<p>No metadata available</p>';
+            }
+
+            // Store filename for next steps
+            sessionStorage.setItem('uploadedFilename', uploadedFilename);
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function displayError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorSection').style.display = 'block';
+        }
+
+        function resetParser() {
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            uploadedFilename = null;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+    </script>
+</body>
+
+</html>

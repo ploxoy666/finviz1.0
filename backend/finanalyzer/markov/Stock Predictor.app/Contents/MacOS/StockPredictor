@@ -1,0 +1,14 @@
+#!/bin/bash
+# Stock Predictor App Launcher
+# Opens Terminal and runs the prediction wizard
+
+# Get the Resources directory
+RESOURCES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../Resources" && pwd )"
+
+# Open a new Terminal window and run the app
+osascript <<END
+tell application "Terminal"
+    activate
+    do script "cd '$RESOURCES_DIR' && clear && ./launch_app.sh"
+end tell
+END

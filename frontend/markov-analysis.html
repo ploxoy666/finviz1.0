@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markov Chain Analysis - Financial Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analyzer-styles.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .log-output {
+            background: #1e1e2f;
+            color: #4ade80;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            margin-top: 20px;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="brand-name">FinvizPro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="index.html#quote" class="nav-link">Stock Quote</a></li>
+                <li><a href="index.html#watchlist" class="nav-link">Watchlist</a></li>
+                <li><a href="index.html#compare" class="nav-link">Compare</a></li>
+                <li><a href="screener.html" class="nav-link">Screener</a></li>
+                <li><a href="news.html" class="nav-link">News</a></li>
+                <li><a href="insider.html" class="nav-link">Insider</a></li>
+                <li class="dropdown">
+                    <a href="#" class="nav-link active">Financial Analyzer ▼</a>
+                    <div class="dropdown-content">
+                        <a href="pdf-parser.html">PDF Parser</a>
+                        <a href="gaap-classifier.html">GAAP/IFRS Classifier</a>
+                        <a href="financial-extractor.html">Financial Extractor</a>
+                        <a href="model-builder.html">Model Builder</a>
+                        <a href="forecast-engine.html">Forecast Engine</a>
+                        <a href="markov-analysis.html" class="active">Markov Analysis</a>
+                        <a href="show-case-analysis.html">Show Case Analysis (PDF)</a>
+                        <!-- New Link will be here later, kept original names for now -->
+                        <a href="report-generator.html">Report Generator</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="analyzer-container">
+        <div class="analyzer-header">
+            <h1>🎲 Markov Chain Analysis</h1>
+            <p>Probabilistic stock price forecasting using state transitions</p>
+        </div>
+
+        <div class="assumptions-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Stock Ticker</label>
+                    <input type="text" id="ticker" placeholder="e.g. AAPL, SPY" value="SPY">
+                </div>
+                <div class="form-group">
+                    <label>History Period</label>
+                    <select id="period">
+                        <option value="1y">1 Year</option>
+                        <option value="2y" selected>2 Years</option>
+                        <option value="5y">5 Years</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Number of States</label>
+                    <select id="n_states">
+                        <option value="3">3 (Bear/Neutral/Bull)</option>
+                        <option value="5" selected>5 (Detailed)</option>
+                        <option value="7">7 (Granular)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Forecast Days</label>
+                    <input type="number" id="n_days" value="5" min="1" max="30">
+                </div>
+            </div>
+            <div class="action-buttons" style="margin-top: 20px;">
+                <button class="btn-primary" onclick="runAnalysis()">Run Analysis</button>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h4>🧠 How it works</h4>
+            <p>This tool uses <strong>Markov Chains</strong> to model stock price movements as probabilistic transitions
+                between states.
+                First, historical price changes are discretized into states (e.g., "Bullish", "Bearish", "Neutral").
+                Then, a transition matrix is calculated to determine the probability of moving from one state to
+                another.
+                Finally, we use Monte Carlo simulations to project future price paths based on these probabilities.</p>
+        </div>
+
+        <div id="loadingSection" class="loading-section" style="display: none;">
+            <div class="spinner"></div>
+            <p>Training Markov Models & Running Simulations...</p>
+        </div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+
+            <!-- Summary Dashboard -->
+            <div class="grid-3" id="summaryDashboard" style="display: none; margin-bottom: 2rem;">
+                <!-- Recommendation Card -->
+                <div class="result-card" style="text-align: center;">
+                    <h3>🤖 Model Recommendation</h3>
+                    <div id="recSignal" style="font-size: 2.5rem; font-weight: 800; margin: 1rem 0;">-</div>
+                    <div id="recConfidence" style="color: var(--text-secondary); font-size: 0.9rem;">Confidence: -</div>
+                </div>
+
+                <!-- Probabilities Card -->
+                <div class="result-card">
+                    <h3>🎲 Probabilities</h3>
+                    <div style="margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Uptrend</span>
+                            <span id="probUpVal">-%</span>
+                        </div>
+                        <div class="progress-bar-bg"
+                            style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 1.5rem;">
+                            <div id="probUpBar"
+                                style="width: 0%; height: 100%; background: var(--success); transition: width 1s ease;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Downtrend</span>
+                            <span id="probDownVal">-%</span>
+                        </div>
+                        <div class="progress-bar-bg"
+                            style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div id="probDownBar"
+                                style="width: 0%; height: 100%; background: var(--danger); transition: width 1s ease;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Card -->
+                <div class="result-card">
+                    <h3>⚠️ Risk Analysis (1 Day)</h3>
+                    <div class="metadata-grid" style="grid-template-columns: 1fr;">
+                        <div class="metadata-item">
+                            <strong>Volatility (σ):</strong> <span id="riskVol">-</span>
+                        </div>
+                        <div class="metadata-item">
+                            <strong>VaR (95%):</strong> <span id="riskVar">-</span>
+                        </div>
+                        <div class="metadata-item">
+                            <strong>Max Potential Loss:</strong> <span id="riskMax">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="result-card">
+                    <h3>📈 Price Forecast</h3>
+                    <div id="forecastChart" style="height: 400px;"></div>
+                </div>
+
+                <div class="result-card">
+                    <h3>📊 Forecast Details</h3>
+                    <div class="metadata-section">
+                        <div class="metadata-grid">
+                            <div class="metadata-item">
+                                <strong>Current Price:</strong> <span id="currentPrice">-</span>
+                            </div>
+                            <div class="metadata-item">
+                                <strong>Predicted (5 Days):</strong> <span id="predictedPrice">-</span>
+                            </div>
+                            <div class="metadata-item">
+                                <strong>Expected Return:</strong> <span id="expectedReturn">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <h3 style="cursor: pointer; display: flex; align-items: center; gap: 10px;" onclick="toggleLogs()">
+                    <span>📜 Analysis Log (Debug)</span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">▼ Click to expand</span>
+                </h3>
+                <div class="log-output" id="logOutput" style="display: none;">
+                    Waiting for analysis...
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error</h3>
+                <p id="errorMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        async function runAnalysis() {
+            const ticker = document.getElementById('ticker').value.toUpperCase();
+            const period = document.getElementById('period').value;
+            const n_states = document.getElementById('n_states').value;
+            const n_days = document.getElementById('n_days').value;
+
+            if (!ticker) {
+                alert('Please enter a ticker symbol');
+                return;
+            }
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/analyzer/markov`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ticker: ticker,
+                        period: period,
+                        n_states: n_states,
+                        n_days: n_days
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // Display log if available even on error
+                    if (data.log) {
+                        document.getElementById('resultsSection').style.display = 'block';
+                        document.getElementById('logOutput').textContent = data.log;
+                        // Hide charts/results if they are empty
+                        document.getElementById('forecastChart').innerHTML = '';
+                        document.getElementById('currentPrice').textContent = '-';
+                        document.getElementById('predictedPrice').textContent = '-';
+                        document.getElementById('expectedReturn').textContent = '-';
+                    }
+                    throw new Error(data.error || 'Analysis failed. Check logs.');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = error.message;
+                document.getElementById('errorSection').style.display = 'block';
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Fill Log
+            document.getElementById('logOutput').textContent = data.log;
+
+            // --- Populate Summary Dashboard ---
+            const summary = data.summary;
+            const dash = document.getElementById('summaryDashboard');
+
+            if (summary && summary.recommendation) {
+                dash.style.display = 'grid'; // Grid-3 layout
+
+                // 1. Recommendation
+                const rec = summary.recommendation;
+                const recEl = document.getElementById('recSignal');
+                recEl.textContent = rec.signal;
+                document.getElementById('recConfidence').textContent = `Confidence: ${rec.confidence}`;
+
+                // Color coding
+                if (rec.signal.includes('BUY')) recEl.style.color = 'var(--success)';
+                else if (rec.signal.includes('SELL')) recEl.style.color = 'var(--danger)';
+                else recEl.style.color = 'var(--warning)';
+
+                // 2. Probabilities
+                document.getElementById('probUpVal').textContent = rec.prob_up.toFixed(1) + '%';
+                document.getElementById('probDownVal').textContent = rec.prob_down.toFixed(1) + '%';
+
+                // Animate bars
+                setTimeout(() => {
+                    document.getElementById('probUpBar').style.width = rec.prob_up + '%';
+                    document.getElementById('probDownBar').style.width = rec.prob_down + '%';
+                }, 100);
+
+                // 3. Risk
+                if (summary.risk) {
+                    const r = summary.risk;
+                    document.getElementById('riskVol').textContent = r.volatility.toFixed(2) + '%';
+                    document.getElementById('riskVar').textContent = formatCurrency(r.var_95_loss) + ` (${r.var_95_pct.toFixed(2)}%)`;
+                    // If max loss is available
+                    if (r.cvar_loss) {
+                        document.getElementById('riskMax').textContent = formatCurrency(r.cvar_loss) + ` (${r.cvar_pct.toFixed(2)}%) [CVaR]`;
+                    }
+                }
+
+            } else {
+                dash.style.display = 'none'; // Prepare for multi-day if summary not available
+            }
+
+
+            // Basic Stats
+            document.getElementById('currentPrice').textContent = formatCurrency(data.current_price);
+
+            const lastPred = data.predictions[data.predictions.length - 1];
+            document.getElementById('predictedPrice').textContent = formatCurrency(lastPred.expected_price);
+
+            // Fix prediction title
+            const days = data.predictions.length;
+            const predLabel = document.querySelectorAll('.metadata-item strong')[1];
+            if (predLabel) predLabel.textContent = `Predicted (${days} Days):`;
+
+            const returnPct = lastPred.expected_change_pct;
+            const returnElem = document.getElementById('expectedReturn');
+            returnElem.textContent = returnPct.toFixed(2) + '%';
+            returnElem.className = returnPct >= 0 ? 'stat-value success' : 'stat-value error';
+            returnElem.style.fontSize = '1.2rem';
+
+            // Chart
+            renderChart(data.predictions, data.current_price);
+        }
+
+        function toggleLogs() {
+            const logs = document.getElementById('logOutput');
+            logs.style.display = logs.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function renderChart(predictions, startPrice) {
+            const days = predictions.map(p => `Day ${p.day}`);
+            const expected = predictions.map(p => p.expected_price);
+            const lower = predictions.map(p => p.lower_bound);
+            const upper = predictions.map(p => p.upper_bound);
+
+            // Add start point
+            days.unshift('Day 0');
+            expected.unshift(startPrice);
+            lower.unshift(startPrice);
+            upper.unshift(startPrice);
+
+            const traceAvailable = {
+                x: days,
+                y: expected,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Expected Price',
+                line: { color: '#6366f1', width: 3 }
+            };
+
+            const traceUpper = {
+                x: days,
+                y: upper,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Upper 95% CI',
+                line: { width: 0 },
+                marker: { color: "#444" },
+                showlegend: false
+            };
+
+            const traceLower = {
+                x: days,
+                y: lower,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Lower 95% CI',
+                line: { width: 0 },
+                marker: { color: "#444" },
+                fill: 'tonexty',
+                fillcolor: 'rgba(99, 102, 241, 0.2)',
+                showlegend: false
+            };
+
+            const layout = {
+                title: 'Projected Stock Price (Monte Carlo Simulation)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#a1a1aa' },
+                xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: {
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    tickprefix: '$'
+                },
+                margin: { l: 60, r: 20, t: 40, b: 40 }
+            };
+
+            Plotly.newPlot('forecastChart', [traceUpper, traceLower, traceAvailable], layout);
+        }
+
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+        }
+    </script>
+</body>
+
+</html>

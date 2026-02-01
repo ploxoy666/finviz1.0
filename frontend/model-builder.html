@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Builder - Financial Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analyzer-styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="brand-name">FinvizPro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="index.html#quote" class="nav-link">Stock Quote</a></li>
+                <li><a href="index.html#watchlist" class="nav-link">Watchlist</a></li>
+                <li><a href="index.html#compare" class="nav-link">Compare</a></li>
+                <li><a href="screener.html" class="nav-link">Screener</a></li>
+                <li><a href="news.html" class="nav-link">News</a></li>
+                <li><a href="insider.html" class="nav-link">Insider</a></li>
+                <li class="dropdown">
+                    <a href="#" class="nav-link active">Financial Analyzer ▼</a>
+                    <div class="dropdown-content">
+                        <a href="pdf-parser.html">PDF Parser</a>
+                        <a href="gaap-classifier.html">GAAP/IFRS Classifier</a>
+                        <a href="financial-extractor.html">Financial Extractor</a>
+                        <a href="model-builder.html" class="active">Model Builder</a>
+                        <a href="forecast-engine.html">Forecast Engine</a>
+                        <a href="markov-analysis.html">Markov Analysis</a>
+                        <a href="report-generator.html">Report Generator</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="analyzer-container">
+        <div class="analyzer-header">
+            <h1>🔗 3-Statement Model Builder</h1>
+            <p>Build and validate linked financial models</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-card">
+                <div class="upload-icon">🏗️</div>
+                <h3>Build Linked Model</h3>
+                <p>Create integrated Income Statement, Balance Sheet, and Cash Flow model</p>
+
+                <button class="btn-primary" onclick="buildModel()">
+                    Build Model from Uploaded File
+                </button>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="loading-section" style="display: none;">
+            <div class="spinner"></div>
+            <p>Building linked 3-statement model...</p>
+        </div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <div class="result-card">
+                <h3>🎯 Model Results</h3>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">⚖️</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Model Status</div>
+                            <div class="stat-value" id="modelStatus">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">🏢</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Company</div>
+                            <div class="stat-value" id="company" style="font-size: 1.3rem;">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Revenue</div>
+                            <div class="stat-value" id="revenue">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Net Income</div>
+                            <div class="stat-value" id="netIncome">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="balancedBox" class="success-box" style="display: none;">
+                    <h4>✅ Model Successfully Balanced</h4>
+                    <p>All financial statement linkages are validated and balanced.</p>
+                </div>
+
+                <div id="errorBox" class="warning-box" style="display: none;">
+                    <h4>⚠️ Validation Errors Found</h4>
+                    <div id="validationErrors"></div>
+                </div>
+
+                <div class="metadata-section">
+                    <h4>Key Financial Metrics</h4>
+                    <div id="metricsGrid" class="metadata-grid"></div>
+                </div>
+
+                <div class="info-box">
+                    <h4>ℹ️ About 3-Statement Models</h4>
+                    <p>A linked 3-statement model integrates the Income Statement, Balance Sheet, and Cash Flow
+                        Statement.
+                        Key linkages include: Net Income → Retained Earnings, Cash Flow → Cash Balance, CAPEX & D&A →
+                        PPE,
+                        and Working Capital → Operating Cash Flow.</p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="window.location.href='forecast-engine.html'">
+                        Next: Generate Forecast →
+                    </button>
+                    <button class="btn-secondary" onclick="resetBuilder()">
+                        Build Another Model
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error</h3>
+                <p id="errorMessage"></p>
+                <button class="btn-secondary" onclick="resetBuilder()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let uploadedFilename = null;
+
+        window.onload = function () {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (prevFile) {
+                uploadedFilename = prevFile;
+            }
+        };
+
+        async function buildModel() {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (!prevFile) {
+                alert('No previously uploaded file found. Please start from PDF Parser.');
+                window.location.href = 'pdf-parser.html';
+                return;
+            }
+
+            uploadedFilename = prevFile;
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/analyzer/model`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filename: uploadedFilename })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Model building failed');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            // Display model status
+            const statusEl = document.getElementById('modelStatus');
+            if (data.is_balanced) {
+                statusEl.textContent = 'Balanced ✓';
+                statusEl.style.color = '#10b981';
+                document.getElementById('balancedBox').style.display = 'block';
+                document.getElementById('errorBox').style.display = 'none';
+            } else {
+                statusEl.textContent = 'Unbalanced ⚠';
+                statusEl.style.color = '#f59e0b';
+                document.getElementById('balancedBox').style.display = 'none';
+                document.getElementById('errorBox').style.display = 'block';
+
+                // Display validation errors
+                const errorsDiv = document.getElementById('validationErrors');
+                if (data.validation_errors && data.validation_errors.length > 0) {
+                    let errorsHtml = '<ul style="margin: 10px 0; padding-left: 20px;">';
+                    data.validation_errors.forEach(error => {
+                        errorsHtml += `<li>${error}</li>`;
+                    });
+                    errorsHtml += '</ul>';
+                    errorsDiv.innerHTML = errorsHtml;
+                } else {
+                    errorsDiv.innerHTML = '<p>No specific errors reported</p>';
+                }
+            }
+
+            // Display summary metrics
+            if (data.summary) {
+                document.getElementById('company').textContent = data.summary.company || 'N/A';
+                document.getElementById('revenue').textContent = formatCurrency(data.summary.revenue);
+                document.getElementById('netIncome').textContent = formatCurrency(data.summary.net_income);
+
+                // Display additional metrics
+                const metricsGrid = document.getElementById('metricsGrid');
+                let metricsHtml = '';
+
+                const metrics = [
+                    { label: 'Fiscal Year', value: data.summary.fiscal_year },
+                    { label: 'Net Margin', value: formatPercent(data.summary.net_margin) },
+                    { label: 'ROE', value: formatPercent(data.summary.roe) },
+                    { label: 'Total Assets', value: formatCurrency(data.summary.total_assets) },
+                    { label: 'Total Equity', value: formatCurrency(data.summary.total_equity) },
+                    { label: 'Operating Cash Flow', value: formatCurrency(data.summary.operating_cash_flow) }
+                ];
+
+                metrics.forEach(metric => {
+                    metricsHtml += `
+                        <div class="metadata-item">
+                            <strong>${metric.label}:</strong> ${metric.value}
+                        </div>
+                    `;
+                });
+
+                metricsGrid.innerHTML = metricsHtml;
+            }
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function formatCurrency(value) {
+            if (value === null || value === undefined || value === 0) return '$0';
+            return '$' + value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+
+        function formatPercent(value) {
+            if (value === null || value === undefined) return 'N/A';
+            return (value * 100).toFixed(1) + '%';
+        }
+
+        function displayError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorSection').style.display = 'block';
+        }
+
+        function resetBuilder() {
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

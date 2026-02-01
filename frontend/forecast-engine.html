@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forecast Engine - Financial Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analyzer-styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="brand-name">FinvizPro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="index.html#quote" class="nav-link">Stock Quote</a></li>
+                <li><a href="index.html#watchlist" class="nav-link">Watchlist</a></li>
+                <li><a href="index.html#compare" class="nav-link">Compare</a></li>
+                <li><a href="screener.html" class="nav-link">Screener</a></li>
+                <li><a href="news.html" class="nav-link">News</a></li>
+                <li><a href="insider.html" class="nav-link">Insider</a></li>
+                <li class="dropdown">
+                    <a href="#" class="nav-link active">Financial Analyzer ▼</a>
+                    <div class="dropdown-content">
+                        <a href="pdf-parser.html">PDF Parser</a>
+                        <a href="gaap-classifier.html">GAAP/IFRS Classifier</a>
+                        <a href="financial-extractor.html">Financial Extractor</a>
+                        <a href="model-builder.html">Model Builder</a>
+                        <a href="forecast-engine.html" class="active">Forecast Engine</a>
+                        <a href="markov-analysis.html">Markov Analysis</a>
+                        <a href="report-generator.html">Report Generator</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="analyzer-container">
+        <div class="analyzer-header">
+            <h1>📈 Forecast Engine</h1>
+            <p>Generate multi-year financial projections with driver-based modeling</p>
+        </div>
+
+        <div class="assumptions-form">
+            <h3>Forecast Assumptions</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Forecast Years</label>
+                    <input type="number" id="years" value="5" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>Scenario</label>
+                    <select id="scenario">
+                        <option value="base">Base Case</option>
+                        <option value="bull">Bull Case</option>
+                        <option value="bear">Bear Case</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Revenue Growth Rate (%)</label>
+                    <input type="number" id="revenueGrowth" value="8" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Gross Margin (%)</label>
+                    <input type="number" id="grossMargin" value="42" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Operating Margin (%)</label>
+                    <input type="number" id="operatingMargin" value="22" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Tax Rate (%)</label>
+                    <input type="number" id="taxRate" value="21" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>CAPEX (% of Revenue)</label>
+                    <input type="number" id="capexPercent" value="6" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Days Sales Outstanding</label>
+                    <input type="number" id="dso" value="45" step="1">
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn-primary" onclick="generateForecast()">
+                    Generate Forecast
+                </button>
+            </div>
+        </div>
+
+        <div id="loadingSection" class="loading-section" style="display: none;">
+            <div class="spinner"></div>
+            <p>Generating financial forecast...</p>
+        </div>
+
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <div class="result-card">
+                <h3>📊 Forecast Results</h3>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Forecast Period</div>
+                            <div class="stat-value" id="forecastYears">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Scenario</div>
+                            <div class="stat-value" id="scenarioType">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Growth Rate</div>
+                            <div class="stat-value" id="growthRate">-</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">💹</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Operating Margin</div>
+                            <div class="stat-value" id="opMargin">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h4>Revenue Projection</h4>
+                    <div id="revenueChart"></div>
+                </div>
+
+                <div class="chart-container">
+                    <h4>Profitability Forecast</h4>
+                    <div id="profitChart"></div>
+                </div>
+
+                <div class="metadata-section">
+                    <h4>Projected Financial Statements</h4>
+                    <div id="forecastTable"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="window.location.href='report-generator.html'">
+                        Next: Generate Report →
+                    </button>
+                    <button class="btn-secondary" onclick="resetForecast()">
+                        Adjust Assumptions
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorSection" class="error-section" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error</h3>
+                <p id="errorMessage"></p>
+                <button class="btn-secondary" onclick="resetForecast()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let uploadedFilename = null;
+        let forecastData = null;
+
+        window.onload = function () {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (prevFile) {
+                uploadedFilename = prevFile;
+            }
+        };
+
+        async function generateForecast() {
+            const prevFile = sessionStorage.getItem('uploadedFilename');
+            if (!prevFile) {
+                alert('No previously uploaded file found. Please start from PDF Parser.');
+                window.location.href = 'pdf-parser.html';
+                return;
+            }
+
+            uploadedFilename = prevFile;
+
+            const assumptions = {
+                revenue_growth_rate: parseFloat(document.getElementById('revenueGrowth').value) / 100,
+                gross_margin: parseFloat(document.getElementById('grossMargin').value) / 100,
+                operating_margin: parseFloat(document.getElementById('operatingMargin').value) / 100,
+                tax_rate: parseFloat(document.getElementById('taxRate').value) / 100,
+                capex_percent_of_revenue: parseFloat(document.getElementById('capexPercent').value) / 100,
+                days_sales_outstanding: parseInt(document.getElementById('dso').value)
+            };
+
+            const years = parseInt(document.getElementById('years').value);
+            const scenario = document.getElementById('scenario').value;
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/analyzer/forecast`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: uploadedFilename,
+                        years: years,
+                        scenario: scenario,
+                        assumptions: assumptions
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Forecast generation failed');
+                }
+
+                forecastData = data;
+                displayResults(data);
+
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('forecastYears').textContent = data.forecast_years + ' Years';
+            document.getElementById('scenarioType').textContent = data.scenario.charAt(0).toUpperCase() + data.scenario.slice(1);
+            document.getElementById('growthRate').textContent = (data.assumptions.revenue_growth_rate * 100).toFixed(1) + '%';
+            document.getElementById('opMargin').textContent = (data.assumptions.operating_margin * 100).toFixed(1) + '%';
+
+            // Create charts
+            createCharts(data);
+
+            // Display forecast table
+            displayForecastTable(data);
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function createCharts(data) {
+            if (!data.projections || data.projections.length === 0) return;
+
+            const years = data.projections.map((_, idx) => `Year ${idx + 1}`);
+            const revenues = data.projections.map(p => p.revenue);
+            const grossProfits = data.projections.map(p => p.gross_profit);
+            const netIncomes = data.projections.map(p => p.net_income);
+
+            // Revenue Chart
+            Plotly.newPlot('revenueChart', [{
+                x: years,
+                y: revenues,
+                type: 'scatter',
+                mode: 'lines+markers',
+                fill: 'tozeroy',
+                marker: { color: '#667eea', size: 10 },
+                line: { color: '#667eea', width: 3 }
+            }], {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { t: 20, r: 20, b: 40, l: 80 }
+            });
+
+            // Profitability Chart
+            Plotly.newPlot('profitChart', [
+                {
+                    x: years,
+                    y: grossProfits,
+                    name: 'Gross Profit',
+                    type: 'scatter',
+                    mode: 'lines+markers'
+                },
+                {
+                    x: years,
+                    y: netIncomes,
+                    name: 'Net Income',
+                    type: 'scatter',
+                    mode: 'lines+markers'
+                }
+            ], {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { t: 20, r: 20, b: 40, l: 80 }
+            });
+        }
+
+        function displayForecastTable(data) {
+            if (!data.projections || data.projections.length === 0) {
+                document.getElementById('forecastTable').innerHTML = '<p>No forecast data available</p>';
+                return;
+            }
+
+            let html = '<table class="data-table"><thead><tr>';
+            html += '<th>Metric</th>';
+            data.projections.forEach((_, idx) => {
+                html += `<th>Year ${idx + 1}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            const metrics = [
+                { key: 'revenue', label: 'Revenue' },
+                { key: 'gross_profit', label: 'Gross Profit' },
+                { key: 'operating_income', label: 'Operating Income' },
+                { key: 'net_income', label: 'Net Income' },
+                { key: 'ebitda', label: 'EBITDA' }
+            ];
+
+            metrics.forEach(metric => {
+                html += '<tr>';
+                html += `<td><strong>${metric.label}</strong></td>`;
+                data.projections.forEach(proj => {
+                    const value = proj[metric.key];
+                    html += `<td>${formatCurrency(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('forecastTable').innerHTML = html;
+        }
+
+        function formatCurrency(value) {
+            if (value === null || value === undefined || value === 0) return '$0';
+            return '$' + value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+
+        function displayError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorSection').style.display = 'block';
+        }
+
+        function resetForecast() {
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

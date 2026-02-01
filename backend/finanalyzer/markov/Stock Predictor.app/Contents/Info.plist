@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>StockPredictor</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.markovchains.stockpredictor</string>
+	<key>CFBundleName</key>
+	<string>Stock Predictor</string>
+	<key>CFBundleDisplayName</key>
+	<string>Stock Predictor</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.13</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2025 Stock Market Prediction using Markov Chains</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.finance</string>
+	<key>CFBundleIconFile</key>
+	<string>icon</string>
+</dict>
+</plist>
