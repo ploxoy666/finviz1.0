@@ -183,10 +183,52 @@
             </div>
         </div>
 
-    </div>
+        <!-- 9. Financial Statements (Full Width) -->
+        <div id="widget-financials-full" class="widget" style="grid-column: span 4; grid-row: span 2;">
+            <div class="widget-header">
+                <div class="widget-title">Financial Statements</div>
+                <div class="window-controls" style="display: flex; gap: 5px;">
+                    <button class="nav-btn-mini active" onclick="switchFinancialTable('income', this)">Income</button>
+                    <button class="nav-btn-mini" onclick="switchFinancialTable('balance', this)">Balance</button>
+                    <button class="nav-btn-mini" onclick="switchFinancialTable('cash', this)">Cash Flow</button>
+                </div>
+            </div>
+            <div class="widget-content scrollable" style="padding:0">
+                <div class="loading-overlay">
+                    <div class="spinner"></div>
+                </div>
+                <div id="financials-full-table-container"></div>
+            </div>
+        </div>
 
-    <script src="config.js"></script>
-    <script src="terminal.js"></script>
+        <!-- 10. Earnings History -->
+        <div id="widget-earnings" class="widget" style="grid-column: span 2; grid-row: span 2;">
+            <div class="widget-header">
+                <div class="widget-title">Earnings History (Reported vs Est)</div>
+            </div>
+            <div class="widget-content scrollable" style="padding:0">
+                <div class="loading-overlay">
+                    <div class="spinner"></div>
+                </div>
+                <div id="earnings-table-container"></div>
+            </div>
+        </div>
+
+        <!-- 11. Dividend Payment -->
+        <div id="widget-dividends" class="widget" style="grid-column: span 2; grid-row: span 2;">
+            <div class="widget-header">
+                <div class="widget-title">Dividend Payment</div>
+            </div>
+            <div class="widget-content scrollable" style="padding:0">
+                <div class="loading-overlay">
+                    <div class="spinner"></div>
+                </div>
+                <div id="dividends-table-container"></div>
+            </div>
+        </div>
+
+        <script src="config.js"></script>
+        <script src="terminal.js"></script>
 </body>
 
 </html>

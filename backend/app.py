@@ -81,14 +81,10 @@ def get_financials(ticker):
         # Helper to convert DF to simpler dict for frontend
         def clean_df(df):
             if df.empty: return {}
-            # Take last 5 columns (years/quarters)
-            df = df.iloc[:, :5]
+            # Take up to 20 columns (years/quarters) to match the "Financial Statements" screenshot requirement
+            df = df.iloc[:, :20]
             # Convert timestamp columns to string
             df.columns = [col.strftime('%Y-%m-%d') if hasattr(col, 'strftime') else str(col) for col in df.columns]
-            # Reset index to make the metrics (rows) keys in JSON
-            # But to_dict() does that by default if we use 'index'? 
-            # Actually to_dict() default is fine: {col: {index: val}}
-            # Let's pivot slightly for easier frontend use: {metric: {date: val}}
             return df.fillna(0).to_dict('index')
 
         return jsonify({
@@ -100,6 +96,74 @@ def get_financials(ticker):
     except Exception as e:
         print(f"Error fetching financials for {ticker}: {e}")
         return jsonify({'error': str(e)}), 400
+
+@app.route('/api/earnings/<ticker>')
+def get_earnings(ticker):
+    try:
+        stock = yf.Ticker(ticker)
+        # earnings_dates gives a DF with EPS Estimate and Reported EPS
+        # It's the best free source for "Earnings History" in yfinance
+        cal = stock.earnings_dates
+        if cal is None or cal.empty:
+             return jsonify({'error': 'No earnings data found'}), 404
+        
+        # Limit to recent 10-12 quarters + future
+        cal = cal.head(12)
+        
+        # Reset index to get Date as a column
+        cal.reset_index(inplace=True)
+        
+        # Format
+        data = []
+        for _, row in cal.iterrows():
+            item = {
+                'date': row['Earnings Date'].strftime('%Y-%m-%d') if hasattr(row['Earnings Date'], 'strftime') else str(row['Earnings Date']),
+                'eps': row.get('Reported EPS'),
+                'eps_est': row.get('EPS Estimate'),
+                # yfinance often doesn't give Revenue Estimate in this specific DF, strictly EPS
+                # We will leave Revenue blank or try to fill if available in other props, but usually it's hard to get free hist rev est.
+                'revenue': None, 
+                'revenue_est': None
+            }
+            # Clean NaNs
+            if hasattr(item['eps'], 'bit_length'): pass # check if number
+            else: 
+                import math
+                if item['eps'] is not None and math.isnan(item['eps']): item['eps'] = None
+                if item['eps_est'] is not None and math.isnan(item['eps_est']): item['eps_est'] = None
+            
+            data.append(item)
+            
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error earnings: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/dividends/<ticker>')
+def get_dividends(ticker):
+    try:
+        stock = yf.Ticker(ticker)
+        divs = stock.dividends
+        
+        if divs.empty:
+            return jsonify([])
+            
+        # Get last 5 years approx
+        divs = divs.sort_index(ascending=False).head(20)
+        
+        data = []
+        for date, value in divs.items():
+            data.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'dividend': value,
+                'adjusted_dividend': value, # yfinance gives the adjusted close equivalent usually, simplfying
+                'payment_date': date.strftime('%Y-%m-%d'), # Approx, yfinance index is usually ex-div date
+                'record_date': '-'
+            })
+            
+        return jsonify(data)
+    except Exception as e:
+         return jsonify({'error': str(e)}), 400
 
 @app.route('/api/company_profile/<ticker>')
 def get_company_profile(ticker):

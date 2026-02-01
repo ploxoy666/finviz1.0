@@ -315,3 +315,43 @@ body {
     height: 100%;
     overflow-y: auto;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+}
+
+.nav-btn-mini {
+    background: transparent;
+    border: none;
+    color: var(--text-gray);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.nav-btn-mini:hover {
+    color: var(--text-white);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn-mini.active {
+    color: var(--primary-blue);
+    background: rgba(59, 130, 246, 0.1);
+    font-weight: 600;
+}

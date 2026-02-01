@@ -37,7 +37,9 @@ async function loadDashboard(ticker) {
         loadProfile(ticker),
         loadFinancials(ticker),
         loadSegments(ticker),
-        loadValuation(ticker)
+        loadValuation(ticker),
+        loadEarnings(ticker),
+        loadDividends(ticker)
     ]).then(() => {
         // console.log("Dashboard Updated");
     });
@@ -370,41 +372,109 @@ async function loadProfile(ticker) {
     } catch (e) { console.error(e); }
 }
 
-// 4. Financials & Revenue Chart
+// Store financial data globally for tab switching
+let financialData = {
+    income: null,
+    balance: null,
+    cash: null
+};
+
+// 4. Financials & Revenue Chart & Full Table
 async function loadFinancials(ticker) {
     try {
         const res = await fetch(`${API_BASE_URL}/financials/${ticker}`);
         const data = await res.json();
         const income = data.income_statement;
 
-        if (!income) return;
+        // Store for switcher
+        financialData.income = data.income_statement;
+        financialData.balance = data.balance_sheet;
+        financialData.cash = data.cash_flow;
 
-        // Table
-        const metrics = Object.keys(income);
-        const dates = Object.keys(income[metrics[0]]).sort().reverse();
-        const keyM = ['Total Revenue', 'Gross Profit', 'Operating Income', 'Net Income', 'EBITDA', 'Basic EPS'];
+        if (income) {
+            // Updated: Populate the new Full Width Financial Table (Default: Income)
+            renderFinancialTable(financialData.income, 'financials-full-table-container');
 
-        let html = `<table class="clean-table"><thead><tr><th>Metric</th>`;
-        dates.forEach(d => html += `<th>${d.substring(0, 4)}</th>`);
-        html += `</tr></thead><tbody>`;
+            // Old small table (Keep or remove? User wants the big one. Let's keep it for compatibility or remove if unused)
+            // Table
+            const metrics = Object.keys(income);
+            const dates = Object.keys(income[metrics[0]]).sort().reverse();
+            const keyM = ['Total Revenue', 'Gross Profit', 'Operating Income', 'Net Income', 'EBITDA', 'Basic EPS'];
 
-        keyM.forEach(m => {
-            let realKey = metrics.find(k => k.includes(m));
-            if (!realKey) return;
-            html += `<tr><td>${m}</td>`;
-            dates.forEach(d => html += `<td>${formatMoney(income[realKey][d])}</td>`);
-            html += `</tr>`;
-        });
-        html += `</tbody></table>`;
-        document.getElementById('financials-table-container').innerHTML = html;
+            let html = `<table class="clean-table"><thead><tr><th>Metric</th>`;
+            dates.slice(0, 5).forEach(d => html += `<th>${d.substring(0, 4)}</th>`);
+            html += `</tr></thead><tbody>`;
+            keyM.forEach(m => {
+                let realKey = metrics.find(k => k.includes(m));
+                if (!realKey) return;
+                html += `<tr><td>${m}</td>`;
+                dates.slice(0, 5).forEach(d => html += `<td>${formatMoney(income[realKey][d])}</td>`);
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+            document.getElementById('financials-table-container').innerHTML = html;
 
-        // Revenue Chart (Stacked Style Lookalike)
-        renderRevenueChart(income);
+            // Revenue Chart (Stacked Style Lookalike)
+            renderRevenueChart(income);
+        }
 
         document.querySelector('#widget-financials .loading-overlay').style.display = 'none';
         document.querySelector('#widget-revenue .loading-overlay').style.display = 'none';
+        if (document.querySelector('#widget-financials-full .loading-overlay'))
+            document.querySelector('#widget-financials-full .loading-overlay').style.display = 'none';
 
     } catch (e) { console.error(e); }
+}
+
+function renderFinancialTable(dataObj, containerId) {
+    if (!dataObj || Object.keys(dataObj).length === 0) {
+        document.getElementById(containerId).innerHTML = '<div class="text-secondary" style="padding:10px;">No data available</div>';
+        return;
+    }
+
+    const metrics = Object.keys(dataObj);
+    // Sort dates descending (newest first)
+    const dates = Object.keys(dataObj[metrics[0]]).sort().reverse();
+
+    let html = `<table class="clean-table" style="min-width: 100%;">
+        <thead>
+            <tr>
+                <th style="position:sticky; left:0; background:var(--bg-panel); z-index:2;">Index</th>`;
+
+    dates.forEach(d => html += `<th>${d.substring(0, 4)}</th>`);
+    html += `</tr></thead><tbody>`;
+
+    metrics.forEach(metric => {
+        html += `<tr>
+            <td style="position:sticky; left:0; background:var(--bg-panel); border-right:1px solid var(--border-subtle); font-weight:500;">${metric}</td>`;
+        dates.forEach(d => {
+            let val = dataObj[metric][d];
+            // Simple formatting
+            if (typeof val === 'number') {
+                if (metric.includes('Ratio') || metric.includes('Margin') || metric.includes('%')) val = (val * 100).toFixed(2) + '%';
+                else val = formatMoney(val);
+            }
+            html += `<td>${val}</td>`;
+        });
+        html += `</tr>`;
+    });
+
+    html += `</tbody></table>`;
+    document.getElementById(containerId).innerHTML = html;
+}
+
+function switchFinancialTable(type, btn) {
+    // Update active button state
+    document.querySelectorAll('#widget-financials-full .nav-btn-mini').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    // Default to income if data missing
+    if (!financialData.income) return;
+
+    const container = 'financials-full-table-container';
+    if (type === 'income') renderFinancialTable(financialData.income, container);
+    if (type === 'balance') renderFinancialTable(financialData.balance, container);
+    if (type === 'cash') renderFinancialTable(financialData.cash, container);
 }
 
 function renderRevenueChart(income) {
@@ -469,6 +539,94 @@ function renderRevenueChart(income) {
             plugins: { legend: { position: 'top', align: 'end', labels: { color: '#8b949e', boxWidth: 10, font: { size: 11 } } } }
         }
     });
+}
+
+// 5. Earnings History
+async function loadEarnings(ticker) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/earnings/${ticker}`);
+        const data = await res.json();
+
+        if (data.error) return;
+
+        let html = `<table class="clean-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>EPS</th>
+                    <th>EPS Est</th>
+                    <th>Outcome</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        data.forEach(item => {
+            const eps = item.eps !== null ? item.eps.toFixed(2) : '-';
+            const est = item.eps_est !== null ? item.eps_est.toFixed(2) : '-';
+            let color = '';
+            let outcome = '-';
+
+            if (item.eps !== null && item.eps_est !== null) {
+                if (item.eps >= item.eps_est) {
+                    color = 'text-green';
+                    outcome = '<span style="color:#00ff9d">beat</span>';
+                } else {
+                    color = 'text-red';
+                    outcome = '<span style="color:#ff4d4d">miss</span>';
+                }
+            }
+
+            html += `<tr>
+                <td>${item.date}</td>
+                <td class="${color}">${eps}</td>
+                <td>${est}</td>
+                <td>${outcome}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+        document.getElementById('earnings-table-container').innerHTML = html;
+        if (document.querySelector('#widget-earnings .loading-overlay'))
+            document.querySelector('#widget-earnings .loading-overlay').style.display = 'none';
+
+    } catch (e) { console.error('Earnings error', e); }
+}
+
+// 6. Dividends
+async function loadDividends(ticker) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/dividends/${ticker}`);
+        const data = await res.json();
+
+        if (data.error) return;
+
+        let html = `<table class="clean-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Dividend</th>
+                    <th>Payment Date</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if (data.length === 0) {
+            html += `<tr><td colspan="3">No dividends found</td></tr>`;
+        } else {
+            data.forEach(item => {
+                html += `<tr>
+                    <td>${item.date}</td>
+                    <td style="color:#00ff9d">${item.dividend}</td>
+                    <td>${item.payment_date}</td>
+                </tr>`;
+            });
+        }
+
+        html += `</tbody></table>`;
+        document.getElementById('dividends-table-container').innerHTML = html;
+        if (document.querySelector('#widget-dividends .loading-overlay'))
+            document.querySelector('#widget-dividends .loading-overlay').style.display = 'none';
+    } catch (e) { console.error('Dividends error', e); }
 }
 
 function formatMoney(num) {
